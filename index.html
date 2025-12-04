@@ -96,6 +96,15 @@
                 <input type="text" id="otherDesignation" placeholder="e.g., Senior Manager" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             
+            <div>
+                <label for="policyType" class="block text-sm font-semibold text-gray-700 mb-1">Policy Type</label>
+                <select id="policyType" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="" disabled selected>Select Policy Type</option>
+                    <option value="Fresh">Fresh</option>
+                    <option value="Renewal">Renewal</option>
+                </select>
+            </div>
+
             <div class="flex items-center gap-2">
                 <input type="checkbox" id="bbhQualification" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                 <label for="bbhQualification" class="text-sm font-semibold text-gray-700">Spearhead HI+LI Login criteria Met</label>
@@ -109,6 +118,20 @@
             <div>
                 <label for="clusterName" class="block text-sm font-semibold text-gray-700 mb-1">Cluster Name</label>
                 <input type="text" id="clusterName" placeholder="Enter Cluster Name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div>
+                <label for="premium" class="block text-sm font-semibold text-gray-700 mb-1">Premium Amount</label>
+                <input type="tel" id="premium" placeholder="Enter Premium Amount" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div>
+                <label for="productType" class="block text-sm font-semibold text-gray-700 mb-1">Product Type</label>
+                <select id="productType" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="" disabled selected>Select Product Type</option>
+                    <option value="Active one">Active one</option>
+                    <option value="Active Health V2">Active Health V2</option>
+                </select>
             </div>
             
             <button type="submit" id="generateBtn" class="bg-gradient-to-r from-blue-600 to-blue-800 text-white font-bold py-3 rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-900 transition duration-300 transform hover:scale-105">Generate Poster</button>
@@ -139,13 +162,23 @@
         const ctx = posterCanvas.getContext('2d');
         const downloadBtn = document.getElementById('downloadBtn');
         const loadingIndicator = document.getElementById('loadingIndicator');
+        const premiumInput = document.getElementById('premium');
         const rmDesignationSelect = document.getElementById('rmDesignation');
         const otherDesignationContainer = document.getElementById('otherDesignationContainer');
         const otherDesignationInput = document.getElementById('otherDesignation');
         const bbhQualificationCheckbox = document.getElementById('bbhQualification');
         
-        // Removed logoUrlAB as it's no longer used
+        const logoUrlAB = './assets/aditya-birla-logo.PNG';
         const logoUrlHDFC = './assets/hdfc-logo.PNG';
+
+        premiumInput.addEventListener('input', function(event) {
+            const value = this.value.replace(/[^0-9]/g, '');
+            if (value) {
+                this.value = `₹${Number(value).toLocaleString('en-IN')}`;
+            } else {
+                this.value = '';
+            }
+        });
 
         rmDesignationSelect.addEventListener('change', function() {
             if (this.value === 'Other') {
@@ -184,9 +217,12 @@
             const data = {
                 rmName: document.getElementById('rmName').value,
                 rmDesignation: rmDesignation,
+                policyType: document.getElementById('policyType').value,
                 isBbhQualified: bbhQualificationCheckbox.checked,
                 branchName: document.getElementById('branchName').value,
-                clusterName: document.getElementById('clusterName').value
+                clusterName: document.getElementById('clusterName').value,
+                premium: document.getElementById('premium').value,
+                productType: document.getElementById('productType').value
             };
 
             const reader = new FileReader();
@@ -194,18 +230,19 @@
                 const rmImage = new Image();
                 rmImage.src = event.target.result;
 
-                // Only load HDFC logo, removed Aditya Birla logo
+                const logoAB = new Image();
+                logoAB.src = logoUrlAB;
+
                 const logoHDFC = new Image();
                 logoHDFC.src = logoUrlHDFC;
                 
                 let loadedCount = 0;
-                // Only need to load RM Image and HDFC Logo
-                const totalToLoad = 2; 
+                const totalToLoad = 3; 
                 
                 const checkIfLoaded = () => {
                     loadedCount++;
                     if (loadedCount === totalToLoad) {
-                        drawPoster(rmImage, logoHDFC, data); // Pass only HDFC logo
+                        drawPoster(rmImage, logoAB, logoHDFC, data);
                         loadingIndicator.style.display = 'none';
                         posterCanvas.style.display = 'block';
                         downloadBtn.style.display = 'block';
@@ -213,10 +250,11 @@
                 };
 
                 rmImage.onload = checkIfLoaded;
+                logoAB.onload = checkIfLoaded;
                 logoHDFC.onload = checkIfLoaded;
                 
                 rmImage.onerror = () => { console.error("RM image failed to load."); checkIfLoaded(); };
-                // Removed error handling for Aditya Birla logo
+                logoAB.onerror = () => { console.error("Aditya Birla logo failed to load."); logoAB.src = ''; checkIfLoaded(); };
                 logoHDFC.onerror = () => { console.error("HDFC logo failed to load."); logoHDFC.src = ''; checkIfLoaded(); };
             };
             reader.readAsDataURL(file);
@@ -261,8 +299,7 @@
             ctx.fill();
         }
 
-        // Updated drawPoster function to only take HDFC logo
-        function drawPoster(rmImage, logoHDFC, data) {
+        function drawPoster(rmImage, logoAB, logoHDFC, data) {
             const canvasWidth = 1080;
             const canvasHeight = 1350;
             posterCanvas.width = canvasWidth;
@@ -286,24 +323,34 @@
                 ctx.drawImage(logoHDFC, logoMargin, logoMargin, hdfcLogoDesiredWidth, hdfcLogoActualHeight);
             }
 
-            // Removed drawing of Aditya Birla logo
+            const abLogoDesiredWidth = 230;
+            let abLogoActualHeight = 0;
+            if (logoAB.complete && logoAB.naturalWidth > 0) {
+                abLogoActualHeight = (logoAB.naturalHeight / logoAB.naturalWidth) * abLogoDesiredWidth;
+            }
+            if (abLogoActualHeight > 0) {
+                ctx.drawImage(logoAB, canvasWidth - abLogoDesiredWidth - logoMargin, logoMargin - 15, abLogoDesiredWidth, abLogoActualHeight);
+            }
 
             ctx.textAlign = 'center';
             ctx.fillStyle = '#C20000';
             ctx.font = 'bolder 90px Inter, sans-serif';
-            ctx.fillText("Congratulations!", canvasWidth / 2, 280);
+            ctx.fillText("Hall of Fame", canvasWidth / 2, 280);
 
+            // Conditional text based on checkbox and policy type
             ctx.fillStyle = '#1a3263';
-            ctx.font = 'bold 60px Inter, sans-serif';
+            ctx.font = 'bold 50px Inter, sans-serif';
             if (data.isBbhQualified) {
-                ctx.fillText("Spearhead HI+LI Login criteria Met", canvasWidth / 2, 380);
+                ctx.fillText("Spearhead HI+LI Login criteria Met", canvasWidth / 2, 360);
+            } else if (data.policyType === 'Fresh') {
+                ctx.fillText("Fresh Health Champ (ABHI)", canvasWidth / 2, 360);
             } else {
-                ctx.fillText("Achieved RNR Target", canvasWidth / 2, 380);
+                ctx.fillText("Health Champ (ABHI)", canvasWidth / 2, 360);
             }
 
             const imageSize = 380;
             const centerX = canvasWidth / 2;
-            const centerY = 380 + 250;
+            const centerY = 360 + 250;
             
             ctx.save();
             ctx.beginPath();
@@ -333,17 +380,21 @@
             ctx.drawImage(rmImage, sourceX, sourceY, sourceSize, sourceSize, centerX - imageSize / 2, centerY - imageSize / 2, imageSize, imageSize);
             ctx.restore();
 
+            // Draw Stars
             const starColor = '#FFC423';
             const starSpikes = 5;
 
+            // Stars on the left
             drawStar(ctx, centerX - 250, centerY, starSpikes, 45, 20, starColor);
             drawStar(ctx, centerX - 330, centerY - 60, starSpikes, 35, 15, starColor);
             drawStar(ctx, centerX - 400, centerY + 30, starSpikes, 25, 10, starColor);
 
+            // Stars on the right
             drawStar(ctx, centerX + 250, centerY, starSpikes, 45, 20, starColor);
             drawStar(ctx, centerX + 330, centerY - 60, starSpikes, 35, 15, starColor);
             drawStar(ctx, centerX + 400, centerY + 30, starSpikes, 25, 10, starColor);
 
+            // Draw Gold Circle Border
             ctx.beginPath();
             ctx.arc(centerX, centerY, imageSize / 2, 0, Math.PI * 2);
             ctx.lineWidth = 18;
@@ -351,22 +402,52 @@
             ctx.stroke();
 
             ctx.textAlign = 'center';
-            let currentY = centerY + imageSize / 2 + 100;
+            let currentY = centerY + imageSize / 2 + 80;
             
             ctx.fillStyle = '#1a3263';
-            ctx.font = 'bold 65px Inter, sans-serif';
+            ctx.font = 'bold 52px Inter, sans-serif';
             ctx.fillText(`${data.rmName}`, canvasWidth / 2, currentY);
 
-            currentY += 80;
-            ctx.font = 'bold 50px Inter, sans-serif';
+            // Draw the designation with a slight gap
+            currentY += 50;
+            ctx.font = 'bold 40px Inter, sans-serif';
             ctx.fillText(`(${data.rmDesignation})`, canvasWidth / 2, currentY);
             
-            currentY += 80;
+            currentY += 50;
 
-            ctx.font = 'bold 40px Inter, sans-serif';
-            ctx.fillText(`Cluster: ${data.clusterName}`, canvasWidth / 2, currentY);
+            ctx.font = 'bold 32px Inter, sans-serif';
+            ctx.fillText(`Branch: ${data.branchName} | Cluster: ${data.clusterName}`, canvasWidth / 2, currentY);
+            currentY += 90;
+            
+            const premiumText = `Premium : ${data.premium}`;
+            ctx.font = 'bold 60px Inter, sans-serif';
+            const premiumTextMetrics = ctx.measureText(premiumText);
+            const premiumTextWidth = premiumTextMetrics.width;
+            const boxPadding = 40;
+            const boxWidth = premiumTextWidth + (boxPadding * 2);
+            const boxHeight = 95;
+            const boxX = (canvasWidth / 2) - (boxWidth / 2);
+            const boxY = currentY - 70;
+
+            ctx.fillStyle = '#FFDCDC';
+            ctx.beginPath();
+            ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 15);
+            ctx.fill();
+
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            ctx.fillStyle = '#E70000';
+            ctx.fillText(premiumText, canvasWidth / 2, currentY);
+            currentY += 70;
+            
+            ctx.fillStyle = '#4a5568';
+            ctx.font = '32px Inter, sans-serif';
+            ctx.fillText(`Product Type: ${data.productType}`, canvasWidth / 2, currentY);
             currentY += 60;
-            ctx.fillText(`Branch: ${data.branchName}`, canvasWidth / 2, currentY);
+            
+            // ASM and SM names are no longer displayed here.
         }
 
         downloadBtn.addEventListener('click', function() {
