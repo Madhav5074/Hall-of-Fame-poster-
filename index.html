@@ -168,8 +168,9 @@
         const otherDesignationInput = document.getElementById('otherDesignation');
         const bbhQualificationCheckbox = document.getElementById('bbhQualification');
         
-        const logoUrlAB = './assets/aditya-birla-logo.PNG';
-        const logoUrlHDFC = './assets/hdfc-logo.PNG';
+        // UPDATED PATHS: Removed './assets/'
+        const logoUrlAB = './aditya-birla-logo.PNG';
+        const logoUrlHDFC = './hdfc-logo.PNG';
 
         premiumInput.addEventListener('input', function(event) {
             const value = this.value.replace(/[^0-9]/g, '');
